@@ -1,0 +1,47 @@
+erDiagram
+    USERS ||--o| PROVIDERS : "extends (role=PROVIDER)"
+    USERS ||--o{ APPOINTMENTS : books
+    PROVIDERS ||--o{ AVAILABILITY_SLOTS : offers
+    SERVICES ||--o{ AVAILABILITY_SLOTS : "used for"
+    SERVICES ||--o{ APPOINTMENTS : "booked for"
+    AVAILABILITY_SLOTS ||--o| APPOINTMENTS : "reserved by (0 or 1 active)"
+
+    USERS {
+        int id PK
+        string username UK
+        string password_hash
+        string role "CUSTOMER or PROVIDER"
+        string full_name
+        string email UK
+        string created_at
+    }
+    PROVIDERS {
+        int id PK
+        int user_id FK "UNIQUE - 1:1 with users"
+        string specialty
+        string bio
+    }
+    SERVICES {
+        int id PK
+        string name
+        int duration_minutes
+        real price
+        string description
+    }
+    AVAILABILITY_SLOTS {
+        int id PK
+        int provider_id FK
+        int service_id FK
+        string start_time
+        string end_time
+        string status "OPEN / BOOKED / CANCELED"
+        int version "optimistic lock"
+    }
+    APPOINTMENTS {
+        int id PK
+        int slot_id FK "UNIQUE where status=CONFIRMED"
+        int customer_id FK
+        int service_id FK
+        string status "CONFIRMED / CANCELED"
+        string created_at
+    }

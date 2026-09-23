@@ -1,0 +1,10 @@
+flowchart LR
+    Client["Client<br/>Browser / SPA"]
+    App["Spring Boot Application<br/>Controller → Service → Repository (JDBC)"]
+    DB[("SQL Database<br/>SQLite (M1) → MySQL/PostgreSQL")]
+    Mock["Mock External Service<br/>Notification (booking confirmations)"]
+
+    Client -->|HTTP request| App
+    App -->|hand-written SQL| DB
+    App -->|"commit, then notify"| Mock
+    Mock -.->|delivery result / retry, fallback| App

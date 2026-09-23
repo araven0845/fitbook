@@ -1,0 +1,131 @@
+* { box-sizing: border-box; }
+body {
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #ffffff;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+.frame {
+    width: 900px;
+    margin: 24px auto;
+    border: 2px solid #333;
+}
+.titlebar {
+    border-bottom: 2px solid #333;
+    padding: 10px 16px;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    background: #f2f2f2;
+}
+.nav {
+    border-bottom: 1px dashed #999;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #555;
+    display: flex;
+    gap: 18px;
+}
+.content { padding: 24px; }
+.box {
+    border: 1.5px solid #999;
+    padding: 12px;
+    margin-bottom: 14px;
+}
+.box-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #777;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 4px;
+}
+.line {
+    height: 10px;
+    background: repeating-linear-gradient(90deg, #ccc, #ccc 4px, transparent 4px, transparent 8px);
+    margin: 6px 0;
+    width: 100%;
+}
+.line.short { width: 60%; }
+.line.medium { width: 80%; }
+.placeholder-img {
+    height: 90px;
+    border: 1.5px dashed #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 12px;
+}
+.btn {
+    display: inline-block;
+    border: 1.5px solid #333;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 3px;
+    background: #eee;
+}
+.btn.primary { background: #ddd; }
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+}
+.field {
+    border: 1.5px solid #999;
+    border-radius: 3px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 10px;
+}
+.field-label {
+    font-size: 11px;
+    color: #555;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1.5px solid #999;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+.badge {
+    border: 1px solid #666;
+    border-radius: 10px;
+    padding: 2px 10px;
+    font-size: 11px;
+    color: #555;
+}
+.annotation {
+    font-size: 11px;
+    color: #b00;
+    border: 1px dashed #b00;
+    padding: 6px 10px;
+    margin-bottom: 14px;
+    background: #fff5f5;
+}
+.check {
+    width: 46px;
+    height: 46px;
+    border: 2px solid #333;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin: 0 auto 10px;
+}
