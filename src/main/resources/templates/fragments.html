@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<nav th:fragment="navbar" class="navbar navbar-expand navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}">FitBook</a>
+        <ul class="navbar-nav me-auto">
+            <li class="nav-item"><a class="nav-link" th:href="@{/browse}">Browse slots</a></li>
+            <li class="nav-item" th:if="${currentUser != null and currentUser.role.name() == 'CUSTOMER'}">
+                <a class="nav-link" th:href="@{/my-appointments}">My appointments</a>
+            </li>
+            <li class="nav-item" th:if="${currentUser != null and currentUser.role.name() == 'PROVIDER'}">
+                <a class="nav-link" th:href="@{/provider}">My slots</a>
+            </li>
+            <li class="nav-item" th:if="${currentUser != null and currentUser.role.name() == 'PROVIDER'}">
+                <a class="nav-link" th:href="@{/provider/appointments}">Bookings with me</a>
+            </li>
+        </ul>
+        <form th:if="${currentUser != null}" method="post" th:action="@{/logout}" class="d-flex align-items-center">
+            <span class="navbar-text me-3">
+                <span th:text="${currentUser.fullName}">Name</span>
+                <span class="badge text-bg-secondary" th:text="${currentUser.role}">ROLE</span>
+            </span>
+            <button class="btn btn-sm btn-outline-light" type="submit">Log out</button>
+        </form>
+        <a th:if="${currentUser == null}" class="btn btn-sm btn-outline-light" th:href="@{/login}">Log in</a>
+    </div>
+</nav>
+</body>
+</html>

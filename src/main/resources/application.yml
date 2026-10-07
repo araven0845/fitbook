@@ -3,6 +3,8 @@ server:
   servlet:
     session:
       timeout: 30m
+      # Cookie only: no ;jsessionid=... in URLs (would leak the session id via links/Referer).
+      tracking-modes: cookie
       cookie:
         http-only: true
         # Lax stops browsers sending the session cookie on cross-site POSTs (CSRF mitigation).
