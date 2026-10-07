@@ -3,6 +3,7 @@ package com.fitbook.service;
 import com.fitbook.dto.AvailabilitySlotDTO;
 import com.fitbook.dto.PageResult;
 import com.fitbook.exception.BadRequestException;
+import com.fitbook.exception.NotFoundException;
 import com.fitbook.repository.SlotRepository;
 import com.fitbook.util.SlotTime;
 import org.springframework.stereotype.Service;
@@ -41,5 +42,10 @@ public class SlotServiceImpl implements SlotService {
         long total = slotRepository.countAvailable(providerId, serviceId, date, now);
 
         return new PageResult<>(items, safePage, safeSize, total);
+    }
+
+    @Override
+    public AvailabilitySlotDTO getSlot(long slotId) {
+        return slotRepository.findDetailById(slotId).orElseThrow(() -> new NotFoundException("Slot not found"));
     }
 }

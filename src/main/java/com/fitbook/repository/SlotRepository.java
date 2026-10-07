@@ -1,8 +1,10 @@
 package com.fitbook.repository;
 
 import com.fitbook.dto.AvailabilitySlotDTO;
+import com.fitbook.model.SlotRecord;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SlotRepository {
 
@@ -19,4 +21,17 @@ public interface SlotRepository {
     List<AvailabilitySlotDTO> findAvailable(Long providerId, Long serviceId, String date, String now, int limit, int offset);
 
     long countAvailable(Long providerId, Long serviceId, String date, String now);
+
+    Optional<SlotRecord> findById(long id);
+
+    Optional<AvailabilitySlotDTO> findDetailById(long id);
+
+    /**
+     * Optimistic booking update: flips OPEN -> BOOKED and bumps the version, but only if the
+     * slot still has the version the caller read. Returns 0 rows when someone else got there first.
+     */
+    int markBooked(long slotId, long expectedVersion);
+
+    /** BOOKED -> OPEN again (appointment cancelled), bumping the version. */
+    int reopen(long slotId);
 }

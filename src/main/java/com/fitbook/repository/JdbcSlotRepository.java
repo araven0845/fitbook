@@ -1,12 +1,15 @@
 package com.fitbook.repository;
 
 import com.fitbook.dto.AvailabilitySlotDTO;
+import com.fitbook.model.SlotRecord;
+import com.fitbook.model.SlotStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Hand-written SQL over JDBC (JdbcTemplate is a thin helper around
@@ -26,6 +29,16 @@ public class JdbcSlotRepository implements SlotRepository {
             rs.getString("start_time"),
             rs.getString("end_time"),
             rs.getString("status")
+    );
+
+    private static final RowMapper<SlotRecord> RECORD_MAPPER = (rs, rowNum) -> new SlotRecord(
+            rs.getLong("id"),
+            rs.getLong("provider_id"),
+            rs.getLong("service_id"),
+            rs.getString("start_time"),
+            rs.getString("end_time"),
+            SlotStatus.valueOf(rs.getString("status")),
+            rs.getLong("version")
     );
 
     private final JdbcTemplate jdbcTemplate;
@@ -70,6 +83,42 @@ public class JdbcSlotRepository implements SlotRepository {
 
         Long count = jdbcTemplate.queryForObject(sql.toString(), Long.class, params.toArray());
         return count == null ? 0 : count;
+    }
+
+    @Override
+    public Optional<SlotRecord> findById(long id) {
+        String sql = "SELECT id, provider_id, service_id, start_time, end_time, status, version FROM availability_slots WHERE id = ?";
+        return jdbcTemplate.query(sql, RECORD_MAPPER, id).stream().findFirst();
+    }
+
+    @Override
+    public Optional<AvailabilitySlotDTO> findDetailById(long id) {
+        String sql = """
+                SELECT s.id AS id,
+                       s.provider_id AS provider_id, u.full_name AS provider_name,
+                       s.service_id AS service_id, sv.name AS service_name,
+                       s.start_time AS start_time, s.end_time AS end_time, s.status AS status
+                FROM availability_slots s
+                JOIN providers p ON p.id = s.provider_id
+                JOIN users u ON u.id = p.user_id
+                JOIN services sv ON sv.id = s.service_id
+                WHERE s.id = ?
+                """;
+        return jdbcTemplate.query(sql, ROW_MAPPER, id).stream().findFirst();
+    }
+
+    @Override
+    public int markBooked(long slotId, long expectedVersion) {
+        String sql = "UPDATE availability_slots SET status = 'BOOKED', version = version + 1 "
+                + "WHERE id = ? AND version = ? AND status = 'OPEN'";
+        return jdbcTemplate.update(sql, slotId, expectedVersion);
+    }
+
+    @Override
+    public int reopen(long slotId) {
+        String sql = "UPDATE availability_slots SET status = 'OPEN', version = version + 1 "
+                + "WHERE id = ? AND status = 'BOOKED'";
+        return jdbcTemplate.update(sql, slotId);
     }
 
     private void appendFilters(StringBuilder sql, List<Object> params, Long providerId, Long serviceId, String date) {
