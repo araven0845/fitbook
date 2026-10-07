@@ -35,7 +35,7 @@ public class JdbcSlotRepository implements SlotRepository {
     }
 
     @Override
-    public List<AvailabilitySlotDTO> findAvailable(Long providerId, Long serviceId, String date, int limit, int offset) {
+    public List<AvailabilitySlotDTO> findAvailable(Long providerId, Long serviceId, String date, String now, int limit, int offset) {
         StringBuilder sql = new StringBuilder("""
                 SELECT s.id AS id,
                        s.provider_id AS provider_id, u.full_name AS provider_name,
@@ -45,9 +45,10 @@ public class JdbcSlotRepository implements SlotRepository {
                 JOIN providers p ON p.id = s.provider_id
                 JOIN users u ON u.id = p.user_id
                 JOIN services sv ON sv.id = s.service_id
-                WHERE s.status = 'OPEN'
+                WHERE s.status = 'OPEN' AND s.start_time > ?
                 """);
         List<Object> params = new ArrayList<>();
+        params.add(now);
         appendFilters(sql, params, providerId, serviceId, date);
         sql.append(" ORDER BY s.start_time LIMIT ? OFFSET ?");
         params.add(limit);
@@ -57,13 +58,14 @@ public class JdbcSlotRepository implements SlotRepository {
     }
 
     @Override
-    public long countAvailable(Long providerId, Long serviceId, String date) {
+    public long countAvailable(Long providerId, Long serviceId, String date, String now) {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*)
                 FROM availability_slots s
-                WHERE s.status = 'OPEN'
+                WHERE s.status = 'OPEN' AND s.start_time > ?
                 """);
         List<Object> params = new ArrayList<>();
+        params.add(now);
         appendFilters(sql, params, providerId, serviceId, date);
 
         Long count = jdbcTemplate.queryForObject(sql.toString(), Long.class, params.toArray());

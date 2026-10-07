@@ -1,20 +1,44 @@
 server:
   port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+        # Lax stops browsers sending the session cookie on cross-site POSTs (CSRF mitigation).
+        same-site: lax
+  error:
+    # Never leak stack traces or exception messages to clients.
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
 
 spring:
   application:
     name: fitbook
 
   # --- Database (JDBC, no ORM) ---
-  # SQLite is used for Milestone 1 because it needs zero external services to run -
+  # SQLite is used because it needs zero external services to run -
   # the grader can clone the repo and start the app with nothing else installed.
   # The DB file is rebuilt from schema.sql + seed.sql on every startup (see schema.sql,
   # which DROPs and recreates all tables), so every run starts from a known, gradeable state.
-  # Swapping to MySQL/PostgreSQL later only means changing these four lines plus the JDBC URL
-  # env var; no repository code changes, since all SQL is hand-written per-table anyway.
+  # Swapping to MySQL/PostgreSQL later only means changing the datasource url/driver here;
+  # all SQL is hand-written per-table.
   datasource:
     url: jdbc:sqlite:${FITBOOK_DB_PATH:./fitbook.db}
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 8
+      # Passed to the SQLite driver on every connection (kept out of the url so
+      # tests that override the url still get them):
+      #  - transaction_mode IMMEDIATE: BEGIN IMMEDIATE takes the write lock up front, so
+      #    concurrent booking transactions queue instead of failing on a lock upgrade
+      #  - busy_timeout: how long a waiting writer blocks before giving up (ms)
+      #  - journal_mode WAL: readers do not block the single writer
+      data-source-properties:
+        transaction_mode: IMMEDIATE
+        busy_timeout: 5000
+        journal_mode: WAL
 
   sql:
     init:

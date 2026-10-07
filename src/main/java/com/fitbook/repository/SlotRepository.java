@@ -12,10 +12,11 @@ public interface SlotRepository {
      * @param providerId optional provider filter
      * @param serviceId  optional service filter
      * @param date       optional date filter, format yyyy-MM-dd
+     * @param now        current local time (yyyy-MM-dd HH:mm), slots that already started are excluded
      * @param limit      page size
      * @param offset     page offset
      */
-    List<AvailabilitySlotDTO> findAvailable(Long providerId, Long serviceId, String date, int limit, int offset);
+    List<AvailabilitySlotDTO> findAvailable(Long providerId, Long serviceId, String date, String now, int limit, int offset);
 
-    long countAvailable(Long providerId, Long serviceId, String date);
+    long countAvailable(Long providerId, Long serviceId, String date, String now);
 }
