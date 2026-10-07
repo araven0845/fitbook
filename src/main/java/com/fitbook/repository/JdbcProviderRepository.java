@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class JdbcProviderRepository implements ProviderRepository {
@@ -33,5 +34,11 @@ public class JdbcProviderRepository implements ProviderRepository {
                 ORDER BY u.full_name
                 """;
         return jdbcTemplate.query(sql, ROW_MAPPER);
+    }
+
+    @Override
+    public Optional<Long> findIdByUserId(long userId) {
+        return jdbcTemplate.queryForList("SELECT id FROM providers WHERE user_id = ?", Long.class, userId)
+                .stream().findFirst();
     }
 }

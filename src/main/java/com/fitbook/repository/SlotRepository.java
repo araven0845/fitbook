@@ -34,4 +34,16 @@ public interface SlotRepository {
 
     /** BOOKED -> OPEN again (appointment cancelled), bumping the version. */
     int reopen(long slotId);
+
+    /** A provider's live (non-cancelled) slots that have not ended yet, soonest first. */
+    List<AvailabilitySlotDTO> findByProvider(long providerId, String now);
+
+    /** True if the provider already has a live slot overlapping [start, end). */
+    boolean existsOverlap(long providerId, String start, String end);
+
+    /** Inserts an OPEN slot and returns its id. */
+    long insert(long providerId, long serviceId, String start, String end);
+
+    /** OPEN -> CANCELLED (provider removed the slot). Returns 0 rows if the slot is no longer OPEN. */
+    int cancelOpen(long slotId);
 }

@@ -7,6 +7,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -118,6 +123,54 @@ public class JdbcSlotRepository implements SlotRepository {
     public int reopen(long slotId) {
         String sql = "UPDATE availability_slots SET status = 'OPEN', version = version + 1 "
                 + "WHERE id = ? AND status = 'BOOKED'";
+        return jdbcTemplate.update(sql, slotId);
+    }
+
+    @Override
+    public List<AvailabilitySlotDTO> findByProvider(long providerId, String now) {
+        String sql = """
+                SELECT s.id AS id,
+                       s.provider_id AS provider_id, u.full_name AS provider_name,
+                       s.service_id AS service_id, sv.name AS service_name,
+                       s.start_time AS start_time, s.end_time AS end_time, s.status AS status
+                FROM availability_slots s
+                JOIN providers p ON p.id = s.provider_id
+                JOIN users u ON u.id = p.user_id
+                JOIN services sv ON sv.id = s.service_id
+                WHERE s.provider_id = ? AND s.status <> 'CANCELLED' AND s.end_time > ?
+                ORDER BY s.start_time
+                """;
+        return jdbcTemplate.query(sql, ROW_MAPPER, providerId, now);
+    }
+
+    @Override
+    public boolean existsOverlap(long providerId, String start, String end) {
+        String sql = "SELECT COUNT(*) FROM availability_slots "
+                + "WHERE provider_id = ? AND status <> 'CANCELLED' AND start_time < ? AND end_time > ?";
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, providerId, end, start);
+        return count != null && count > 0;
+    }
+
+    @Override
+    public long insert(long providerId, long serviceId, String start, String end) {
+        String sql = "INSERT INTO availability_slots (provider_id, service_id, start_time, end_time, status) "
+                + "VALUES (?, ?, ?, ?, 'OPEN')";
+        KeyHolder keys = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setLong(1, providerId);
+            ps.setLong(2, serviceId);
+            ps.setString(3, start);
+            ps.setString(4, end);
+            return ps;
+        }, keys);
+        return keys.getKey().longValue();
+    }
+
+    @Override
+    public int cancelOpen(long slotId) {
+        String sql = "UPDATE availability_slots SET status = 'CANCELLED', version = version + 1 "
+                + "WHERE id = ? AND status = 'OPEN'";
         return jdbcTemplate.update(sql, slotId);
     }
 

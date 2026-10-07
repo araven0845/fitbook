@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class JdbcServiceRepository implements ServiceRepository {
@@ -32,5 +33,11 @@ public class JdbcServiceRepository implements ServiceRepository {
                 ORDER BY name
                 """;
         return jdbcTemplate.query(sql, ROW_MAPPER);
+    }
+
+    @Override
+    public Optional<ServiceDTO> findById(long id) {
+        String sql = "SELECT id, name, duration_minutes, price, description FROM services WHERE id = ?";
+        return jdbcTemplate.query(sql, ROW_MAPPER, id).stream().findFirst();
     }
 }
