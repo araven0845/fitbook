@@ -197,4 +197,4 @@ artifacts only — the milestone reports are written independently.
 
 ## Code-walkthrough video
 
-_TODO: add the unlisted YouTube / Google Drive link here before submission._
+https://drive.google.com/file/d/1hQCZ7GnZpjeq6cb3hwav3qtXhuQKrXTV/view?usp=sharing
