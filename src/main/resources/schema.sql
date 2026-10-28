@@ -3,6 +3,7 @@
 -- recreated each run (see DROP TABLE IF EXISTS below) so the app always
 -- boots from a known, gradeable state; seed.sql repopulates sample data after.
 
+DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS availability_slots;
 DROP TABLE IF EXISTS services;
@@ -89,3 +90,14 @@ CREATE INDEX idx_slots_provider ON availability_slots (provider_id);
 CREATE INDEX idx_slots_service ON availability_slots (service_id);
 CREATE INDEX idx_slots_status_start ON availability_slots (status, start_time);
 CREATE INDEX idx_appointments_customer ON appointments (customer_id);
+
+-- Storage for the mock notification service (the "external" side of the distribution
+-- boundary). idempotency_key is UNIQUE so a retried delivery is stored only once.
+CREATE TABLE notifications (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    idempotency_key  TEXT NOT NULL UNIQUE,
+    recipient        TEXT NOT NULL,
+    type             TEXT NOT NULL CHECK (type IN ('BOOKING_CONFIRMED', 'BOOKING_CANCELLED')),
+    message          TEXT NOT NULL,
+    received_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+);

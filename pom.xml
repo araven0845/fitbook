@@ -13,7 +13,7 @@
 
     <groupId>com.fitbook</groupId>
     <artifactId>fitbook</artifactId>
-    <version>0.2.0-M2</version>
+    <version>0.3.0-M3</version>
     <name>FitBook</name>
     <description>CMPE 172 Term Project - Online Appointment Scheduling System (Fitness Studio scenario)</description>
 
@@ -38,6 +38,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <!-- Micrometer metrics (only the /actuator/metrics endpoint is exposed) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <!-- Bean validation for request DTOs (@Valid) -->

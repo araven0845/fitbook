@@ -52,6 +52,23 @@ spring:
   thymeleaf:
     cache: false
 
+# --- Distribution boundary: notification service ---
+# base-url blank means the mock notification controller in this same app. Point it at another
+# host (NOTIFICATION_BASE_URL) to call a separate service; the gateway interface does not change.
+fitbook:
+  notification:
+    base-url: ${NOTIFICATION_BASE_URL:}
+    connect-timeout: 500ms
+    read-timeout: 1500ms
+    max-attempts: 3
+    backoff: 100ms
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: metrics
+
 logging:
   level:
     root: INFO

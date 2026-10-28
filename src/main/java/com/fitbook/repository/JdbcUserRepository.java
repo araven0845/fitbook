@@ -30,4 +30,9 @@ public class JdbcUserRepository implements UserRepository {
         String sql = "SELECT id, username, password_hash, role, full_name FROM users WHERE username = ?";
         return jdbcTemplate.query(sql, ROW_MAPPER, username).stream().findFirst();
     }
+
+    @Override
+    public Optional<String> findEmailById(long id) {
+        return jdbcTemplate.queryForList("SELECT email FROM users WHERE id = ?", String.class, id).stream().findFirst();
+    }
 }

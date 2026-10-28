@@ -6,9 +6,13 @@ import com.fitbook.dto.MyAppointmentsDTO;
 import com.fitbook.exception.ConflictException;
 import com.fitbook.exception.ForbiddenException;
 import com.fitbook.exception.NotFoundException;
+import com.fitbook.exception.ApiException;
 import com.fitbook.model.AppointmentRecord;
+import com.fitbook.notification.NotificationService;
 import com.fitbook.repository.AppointmentRepository;
 import com.fitbook.util.SlotTime;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.ConcurrencyFailureException;
@@ -35,17 +39,44 @@ public class BookingServiceImpl implements BookingService {
 
     private final BookingTransactions transactions;
     private final AppointmentRepository appointmentRepository;
+    private final NotificationService notificationService;
+    private final MeterRegistry meterRegistry;
     private final Clock clock;
 
-    public BookingServiceImpl(BookingTransactions transactions, AppointmentRepository appointmentRepository, Clock clock) {
+    public BookingServiceImpl(BookingTransactions transactions, AppointmentRepository appointmentRepository,
+                              NotificationService notificationService, MeterRegistry meterRegistry, Clock clock) {
         this.transactions = transactions;
         this.appointmentRepository = appointmentRepository;
+        this.notificationService = notificationService;
+        this.meterRegistry = meterRegistry;
         this.clock = clock;
     }
 
+    /**
+     * Commit first, then notify: the transaction has fully committed when withRetry returns, and only
+     * then is the notification sent. Notification trouble can therefore never fail or undo a booking.
+     */
     @Override
     public AppointmentDTO book(long customerId, BookingRequest request) {
-        return withRetry(() -> transactions.book(customerId, request));
+        Timer.Sample latency = Timer.start(meterRegistry);
+        String outcome = "error";
+        try {
+            AppointmentDTO appointment = withRetry(() -> transactions.book(customerId, request));
+            outcome = "success";
+            log.info("Booking confirmed appointmentId={} slotId={} customerId={}", appointment.id(), appointment.slotId(), customerId);
+            notificationService.notifyBookingConfirmed(customerId, appointment);
+            return appointment;
+        } catch (ConflictException e) {
+            outcome = "conflict";
+            log.info("Booking conflict slotId={} customerId={} reason={}", request.slotId(), customerId, e.getMessage());
+            throw e;
+        } catch (ApiException e) {
+            outcome = "rejected";
+            throw e;
+        } finally {
+            meterRegistry.counter("fitbook.bookings", "result", outcome).increment();
+            latency.stop(meterRegistry.timer("fitbook.booking.latency"));
+        }
     }
 
     @Override
@@ -54,6 +85,9 @@ public class BookingServiceImpl implements BookingService {
             transactions.cancel(customerId, appointmentId);
             return null;
         });
+        meterRegistry.counter("fitbook.cancellations").increment();
+        log.info("Appointment cancelled appointmentId={} customerId={}", appointmentId, customerId);
+        notificationService.notifyBookingCancelled(customerId, appointmentId);
     }
 
     @Override

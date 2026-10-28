@@ -8,6 +8,8 @@ import com.fitbook.exception.ForbiddenException;
 import com.fitbook.exception.NotFoundException;
 import com.fitbook.model.AppointmentRecord;
 import com.fitbook.model.AppointmentStatus;
+import com.fitbook.notification.NotificationService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import com.fitbook.repository.AppointmentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,14 +46,17 @@ class BookingServiceImplTest {
     private BookingTransactions transactions;
     @Mock
     private AppointmentRepository appointmentRepository;
+    @Mock
+    private NotificationService notificationService;
 
+    private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
     private BookingServiceImpl service;
 
     private final BookingRequest request = new BookingRequest(10L, 3L);
 
     @BeforeEach
     void setUp() {
-        service = new BookingServiceImpl(transactions, appointmentRepository, CLOCK);
+        service = new BookingServiceImpl(transactions, appointmentRepository, notificationService, meters, CLOCK);
     }
 
     private AppointmentDTO dto(long id, String status, String start) {
