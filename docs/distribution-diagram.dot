@@ -1,0 +1,28 @@
+digraph distribution {
+  rankdir=LR;
+  graph [fontname="Helvetica", fontsize=12, nodesep=0.5, ranksep=0.9, pad=0.3];
+  node  [fontname="Helvetica", fontsize=11, shape=box, style="rounded,filled", fillcolor="#eef1ff", color="#6c63c7"];
+  edge  [fontname="Helvetica", fontsize=10, color="#444444"];
+
+  client [label="Client\nBrowser"];
+
+  subgraph cluster_app {
+    label="Appointment Scheduler (Spring Boot)"; style="rounded,dashed"; color="#888888";
+    scheduler [label="Controller -> Service\nBookingServiceImpl\nBookingTransactions\n(JDBC repositories)"];
+    gateway   [label="NotificationService\n+ NotificationClient (Gateway)\ntimeout 1.5s, 3 attempts,\nsame idempotency key"];
+    db        [label="SQL Database\nSQLite", shape=cylinder, fillcolor="#fff7e0", color="#c9a227"];
+  }
+
+  subgraph cluster_notify {
+    label="Notification Service (mock external system)"; style="rounded,dashed"; color="#888888";
+    notify [label="NotificationController\nPOST /notifications\n(NotificationRequest DTO)"];
+    store  [label="notifications table\nUNIQUE idempotency_key", shape=cylinder, fillcolor="#fff7e0", color="#c9a227"];
+  }
+
+  client -> scheduler  [label="HTTP request"];
+  scheduler -> db      [label="1. hand-written SQL\ntransaction commits"];
+  scheduler -> gateway [label="2. only after commit"];
+  gateway -> notify    [label="3. HTTP/JSON, one coarse-grained call", penwidth=2, color="#c0392b"];
+  notify -> store      [label="store (duplicates ignored)"];
+  gateway -> scheduler [label="on failure: WARN log,\nmetric, booking stays confirmed", style=dashed, constraint=false];
+}
