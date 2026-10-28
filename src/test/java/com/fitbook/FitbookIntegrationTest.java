@@ -18,6 +18,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "spring.datasource.url=jdbc:sqlite:./fitbook-test.db")
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:sqlite:./fitbook-test.db",
+        // Nothing listens here, so notifications fail fast and never reach a dev server running on :8080.
+        "fitbook.notification.base-url=http://localhost:1",
+        "fitbook.notification.max-attempts=1"
+})
 public @interface FitbookIntegrationTest {
 }

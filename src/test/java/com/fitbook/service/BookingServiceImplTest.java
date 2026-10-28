@@ -14,6 +14,7 @@ import com.fitbook.repository.AppointmentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.CannotAcquireLockException;
@@ -31,6 +32,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -108,6 +111,59 @@ class BookingServiceImplTest {
 
         assertThrows(ForbiddenException.class, () -> service.cancel(7, 55));
         verify(transactions, times(1)).cancel(7, 55);
+    }
+
+    // ---- commit first, then notify ----
+
+    @Test
+    void book_notifiesOnlyAfterTheTransactionHasReturned() {
+        AppointmentDTO ok = dto(1, "BOOKED", "2026-10-08 09:00");
+        when(transactions.book(7, request)).thenReturn(ok);
+
+        service.book(7, request);
+
+        InOrder order = inOrder(transactions, notificationService);
+        order.verify(transactions).book(7, request);
+        order.verify(notificationService).notifyBookingConfirmed(7, ok);
+        assertEquals(1.0, meters.counter("fitbook.bookings", "result", "success").count());
+    }
+
+    @Test
+    void book_whenSlotIsTaken_sendsNoNotificationAndCountsAConflict() {
+        when(transactions.book(7, request)).thenThrow(new ConflictException("taken"));
+
+        assertThrows(ConflictException.class, () -> service.book(7, request));
+
+        verifyNoInteractions(notificationService);
+        assertEquals(1.0, meters.counter("fitbook.bookings", "result", "conflict").count());
+    }
+
+    @Test
+    void book_keepsTheBookingEvenThoughNotificationServiceIsNeverCalledOnFailure() {
+        when(transactions.book(7, request)).thenThrow(new CannotAcquireLockException("busy"));
+
+        assertThrows(ConflictException.class, () -> service.book(7, request));
+
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void cancel_notifiesAfterTheCancellationCommits() {
+        service.cancel(7, 55);
+
+        InOrder order = inOrder(transactions, notificationService);
+        order.verify(transactions).cancel(7, 55);
+        order.verify(notificationService).notifyBookingCancelled(7, 55);
+        assertEquals(1.0, meters.counter("fitbook.cancellations").count());
+    }
+
+    @Test
+    void cancel_forbidden_sendsNoNotification() {
+        doThrow(new ForbiddenException("not yours")).when(transactions).cancel(8, 55);
+
+        assertThrows(ForbiddenException.class, () -> service.cancel(8, 55));
+
+        verifyNoInteractions(notificationService);
     }
 
     // ---- reads ----
