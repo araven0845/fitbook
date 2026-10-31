@@ -321,4 +321,4 @@ artifacts only — the milestone reports are written independently.
 ## Code-walkthrough videos
 
 - Milestone 2: https://drive.google.com/file/d/1hQCZ7GnZpjeq6cb3hwav3qtXhuQKrXTV/view?usp=sharing
-- Milestone 3: _TODO: add the unlisted YouTube / Google Drive link here before submission._
+- Milestone 3: https://drive.google.com/file/d/1bGu8VMenYs7ThDzLvclf0FsgeuP_LAMv/view?usp=sharing
