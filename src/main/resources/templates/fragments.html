@@ -9,6 +9,9 @@
             <li class="nav-item" th:if="${currentUser != null and currentUser.role.name() == 'CUSTOMER'}">
                 <a class="nav-link" th:href="@{/my-appointments}">My appointments</a>
             </li>
+            <li class="nav-item" th:if="${currentUser != null and currentUser.role.name() == 'CUSTOMER'}">
+                <a class="nav-link" th:href="@{/assistant}">Assistant</a>
+            </li>
             <li class="nav-item" th:if="${currentUser != null and currentUser.role.name() == 'PROVIDER'}">
                 <a class="nav-link" th:href="@{/provider}">My slots</a>
             </li>
