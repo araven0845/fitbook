@@ -1,5 +1,6 @@
 # SQLite is an embedded file, so compose runs the app only (no separate database container).
 # The mock notification service is part of the app, so it needs no container of its own.
+# The RAG vector store is Spring AI's in-memory SimpleVectorStore, so it needs no container either.
 services:
   fitbook:
     build: .
@@ -11,6 +12,9 @@ services:
       FITBOOK_DB_PATH: /data/fitbook.db
       # Leave blank to use the in-app mock notification service. Set it to call a separate one:
       # NOTIFICATION_BASE_URL: http://notifications:8081
+      # Gemini key for the AI features, passed through from the host's environment (never written
+      # here). If it is not set on the host, the app runs with the AI features switched off.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     volumes:
       - fitbook-data:/data
     healthcheck:
