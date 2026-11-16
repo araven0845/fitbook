@@ -59,20 +59,32 @@ public class NotificationService {
         }
     }
 
-    private void deliver(long customerId, NotificationType type, String idempotencyKey, String message) {
+    /**
+     * Sends a reminder written by the reminder agent. The key is fixed per appointment, so running
+     * the agent twice (or retrying after a failure) can never deliver the same reminder twice.
+     *
+     * @return true if the notification service accepted it, false if delivery failed
+     */
+    public boolean notifyReminder(long customerId, long appointmentId, String message) {
+        return deliver(customerId, NotificationType.REMINDER, "appointment-" + appointmentId + "-reminder", message);
+    }
+
+    private boolean deliver(long customerId, NotificationType type, String idempotencyKey, String message) {
         try {
             String recipient = userRepository.findEmailById(customerId).orElse(null);
             if (recipient == null) {
                 countResult("failed");
                 log.warn("Notification {} skipped, no email for customer {}", idempotencyKey, customerId);
-                return;
+                return false;
             }
             client.send(new NotificationRequest(idempotencyKey, recipient, type, message));
             countResult("sent");
             log.info("Notification sent key={} type={} customerId={}", idempotencyKey, type, customerId);
+            return true;
         } catch (RuntimeException e) {
             countResult("failed");
             log.warn("Notification {} not delivered, booking is unaffected: {}", idempotencyKey, e.getMessage());
+            return false;
         }
     }
 

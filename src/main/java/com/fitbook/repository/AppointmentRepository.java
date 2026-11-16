@@ -1,6 +1,7 @@
 package com.fitbook.repository;
 
 import com.fitbook.dto.AppointmentDTO;
+import com.fitbook.dto.ReminderCandidate;
 import com.fitbook.model.AppointmentRecord;
 
 import java.util.List;
@@ -22,4 +23,13 @@ public interface AppointmentRepository {
 
     /** BOOKED -> CANCELLED. Returns 0 rows if the appointment was not BOOKED. */
     int markCancelled(long id);
+
+    /**
+     * BOOKED appointments that start after `now` and no later than `until` and have not been
+     * reminded yet, soonest first. This is the reminder agent's work list.
+     */
+    List<ReminderCandidate> findDueForReminder(String now, String until, int limit);
+
+    /** Records that the reminder went out. Returns 0 rows if it was already recorded. */
+    int markReminderSent(long id, String sentAt);
 }

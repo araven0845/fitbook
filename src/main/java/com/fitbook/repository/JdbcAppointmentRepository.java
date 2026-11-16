@@ -1,6 +1,7 @@
 package com.fitbook.repository;
 
 import com.fitbook.dto.AppointmentDTO;
+import com.fitbook.dto.ReminderCandidate;
 import com.fitbook.model.AppointmentRecord;
 import com.fitbook.model.AppointmentStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -97,5 +98,41 @@ public class JdbcAppointmentRepository implements AppointmentRepository {
     @Override
     public int markCancelled(long id) {
         return jdbcTemplate.update("UPDATE appointments SET status = 'CANCELLED' WHERE id = ? AND status = 'BOOKED'", id);
+    }
+
+    @Override
+    public List<ReminderCandidate> findDueForReminder(String now, String until, int limit) {
+        String sql = """
+                SELECT a.id AS id, a.customer_id AS customer_id, cu.full_name AS customer_name,
+                       sv.name AS service_name, pu.full_name AS provider_name,
+                       s.start_time AS start_time, s.end_time AS end_time
+                FROM appointments a
+                JOIN availability_slots s ON s.id = a.slot_id
+                JOIN providers p ON p.id = s.provider_id
+                JOIN users pu ON pu.id = p.user_id
+                JOIN users cu ON cu.id = a.customer_id
+                JOIN services sv ON sv.id = a.service_id
+                WHERE a.status = 'BOOKED'
+                  AND a.reminder_sent_at IS NULL
+                  AND s.start_time > ?
+                  AND s.start_time <= ?
+                ORDER BY s.start_time, a.id
+                LIMIT ?
+                """;
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new ReminderCandidate(
+                rs.getLong("id"),
+                rs.getLong("customer_id"),
+                rs.getString("customer_name"),
+                rs.getString("service_name"),
+                rs.getString("provider_name"),
+                rs.getString("start_time"),
+                rs.getString("end_time")
+        ), now, until, limit);
+    }
+
+    @Override
+    public int markReminderSent(long id, String sentAt) {
+        return jdbcTemplate.update(
+                "UPDATE appointments SET reminder_sent_at = ? WHERE id = ? AND reminder_sent_at IS NULL", sentAt, id);
     }
 }
