@@ -1,0 +1,23 @@
+# Test-only settings, loaded on top of src/main/resources/application.yml in every test.
+# They guarantee that no test ever calls the real Gemini API, even on a machine where
+# GEMINI_API_KEY is set: Spring AI's Google auto-configuration is switched off, and
+# com.fitbook.testsupport.StubAiConfig supplies a scripted chat model and a local embedding model.
+spring:
+  ai:
+    model:
+      chat: none
+      embedding:
+        text: none
+    google:
+      genai:
+        api-key: test-key-not-real
+
+fitbook:
+  ai:
+    rag:
+      # The toy embedding model used in tests scores a good match around 0.3 to 0.5, far lower than
+      # Gemini's embeddings do, so the cut-off is lowered here. Production keeps its own value.
+      similarity-threshold: 0.2
+    reminder:
+      # Tests run the reminder agent directly instead of waiting for the timer.
+      scheduling-enabled: false

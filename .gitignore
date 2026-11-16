@@ -9,3 +9,6 @@ target/
 .vscode/
 .DS_Store
 *.log
+# Never commit local secrets (the Gemini API key belongs in the environment)
+.env
+.env.*

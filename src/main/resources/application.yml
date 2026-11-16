@@ -52,6 +52,24 @@ spring:
   thymeleaf:
     cache: false
 
+  # --- Milestone 4: Spring AI with the Gemini API ---
+  # The key comes only from the GEMINI_API_KEY environment variable and is never written to a file.
+  # Only api-key is set: adding project-id or location would switch Spring AI to Vertex AI mode,
+  # which rejects a Google AI Studio key. Without a key the app still starts; the AI features
+  # answer "not configured" and everything else works as before.
+  ai:
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY:}
+        chat:
+          options:
+            model: ${GEMINI_CHAT_MODEL:gemini-3.5-flash-lite}
+            temperature: 0.2
+        embedding:
+          text:
+            options:
+              model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-001}
+
 # --- Distribution boundary: notification service ---
 # base-url blank means the mock notification controller in this same app. Point it at another
 # host (NOTIFICATION_BASE_URL) to call a separate service; the gateway interface does not change.
@@ -63,6 +81,21 @@ fitbook:
     max-attempts: 3
     backoff: 100ms
 
+  # --- AI agents ---
+  ai:
+    request-timeout: 30s          # hard limit for one Gemini call
+    memory-max-messages: 20       # conversation window kept per member (stored in SQLite)
+    confirmation-ttl: 10m         # how long a prepared booking waits for the member's "yes"
+    rag:
+      top-k: 3                    # FAQ sections retrieved per message
+      similarity-threshold: 0.55  # weaker matches are not attached
+    reminder:
+      scheduling-enabled: true    # the timer; the manual trigger works either way
+      initial-delay: 1m           # first run after startup
+      interval: 15m               # pause between runs
+      lookahead: 24h              # remind for appointments starting within this window
+      max-per-run: 10             # keeps one run inside the free-tier rate limit
+
 management:
   endpoints:
     web:
@@ -73,3 +106,6 @@ logging:
   level:
     root: INFO
     com.fitbook: DEBUG
+    # Spring AI logs a full stack trace for every failed model call. Our own code already logs one
+    # WARN line with the cause (AssistantService, ReminderAgent), so the duplicate is silenced.
+    org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration: ERROR

@@ -2,6 +2,8 @@
 -- Hand-written SQL, loaded over JDBC on every startup. Tables are dropped and
 -- recreated each run (see DROP TABLE IF EXISTS below) so the app always
 -- boots from a known, gradeable state; seed.sql repopulates sample data after.
+-- The one exception is chat_memory (bottom of this file): the assistant's
+-- conversation memory is meant to survive a restart, so it is never dropped.
 
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS appointments;
@@ -69,7 +71,9 @@ CREATE TABLE appointments (
     customer_id  INTEGER NOT NULL REFERENCES users(id),
     service_id   INTEGER NOT NULL REFERENCES services(id),
     status       TEXT NOT NULL DEFAULT 'BOOKED' CHECK (status IN ('BOOKED', 'CANCELLED', 'COMPLETED')),
-    created_at   TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    created_at   TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    -- Set by the reminder agent once its reminder was delivered, so a later run skips this row.
+    reminder_sent_at TEXT
 );
 
 -- *** Double-booking guard (database-level backstop) ***
@@ -97,7 +101,18 @@ CREATE TABLE notifications (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     idempotency_key  TEXT NOT NULL UNIQUE,
     recipient        TEXT NOT NULL,
-    type             TEXT NOT NULL CHECK (type IN ('BOOKING_CONFIRMED', 'BOOKING_CANCELLED')),
+    type             TEXT NOT NULL CHECK (type IN ('BOOKING_CONFIRMED', 'BOOKING_CANCELLED', 'REMINDER')),
     message          TEXT NOT NULL,
     received_at      TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
+
+-- Persistent conversation memory for the AI assistant: one row per remembered message, in order.
+-- Deliberately NOT dropped above, so a member's conversation is still there after a restart.
+CREATE TABLE IF NOT EXISTS chat_memory (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id  TEXT NOT NULL,              -- 'user-<id>': one conversation per member
+    position         INTEGER NOT NULL,           -- 0-based order inside the conversation
+    role             TEXT NOT NULL CHECK (role IN ('USER', 'ASSISTANT', 'SYSTEM')),
+    content          TEXT NOT NULL,
+    UNIQUE (conversation_id, position)
 );

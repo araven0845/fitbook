@@ -13,6 +13,9 @@ import java.lang.annotation.Target;
  * Full application context over a real SQLite file. Every integration test uses this same
  * annotation, so they share one cached context (schema.sql + seed.sql load once) and each test
  * creates its own slots instead of relying on shared mutable data.
+ *
+ * <p>Gemini is never called from tests: src/test/resources/config/application.yml switches the
+ * Google auto-configuration off and testsupport.StubAiConfig supplies stand-in models.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
