@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @SpringBootTest
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:sqlite:./fitbook-resilience-test.db",
+        "spring.datasource.url=jdbc:sqlite:./target/fitbook-resilience-test-${random.uuid}.db",
         "fitbook.notification.connect-timeout=300ms",
         "fitbook.notification.read-timeout=300ms",
         "fitbook.notification.max-attempts=3",

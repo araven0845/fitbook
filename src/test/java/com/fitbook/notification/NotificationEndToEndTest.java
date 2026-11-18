@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Real HTTP all the way: the app calls the mock notification controller on its own random port. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = "spring.datasource.url=jdbc:sqlite:./fitbook-e2e-test.db")
+@TestPropertySource(properties = "spring.datasource.url=jdbc:sqlite:./target/fitbook-e2e-test-${random.uuid}.db")
 class NotificationEndToEndTest {
 
     @Autowired private BookingService bookingService;

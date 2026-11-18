@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Same context settings as NotificationEndToEndTest, so the two share one running app.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = "spring.datasource.url=jdbc:sqlite:./fitbook-e2e-test.db")
+@TestPropertySource(properties = "spring.datasource.url=jdbc:sqlite:./target/fitbook-e2e-test-${random.uuid}.db")
 class ReminderEndToEndTest {
 
     private static final AtomicInteger SLOT_COUNTER = new AtomicInteger();

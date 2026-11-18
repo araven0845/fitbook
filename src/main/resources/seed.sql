@@ -1,25 +1,35 @@
 -- FitBook - sample data (accounts, trainers, services, slots, appointments)
--- Loaded on every startup after schema.sql rebuilds the tables.
--- Slot times are relative to the moment the app starts, so there are always
--- upcoming OPEN slots to book (and one past appointment to show history).
+-- Runs on every startup after schema.sql, but each INSERT is guarded by
+-- "WHERE NOT EXISTS (SELECT 1 FROM <table>)": demo data goes only into an empty table,
+-- so a restart never duplicates it and never overwrites real data. Rows are never
+-- hard-deleted (bookings are cancelled, slots are marked CANCELLED), so a table is only
+-- empty on a brand-new database.
+-- Slot times are relative to the moment the database is first created, so a fresh
+-- database always has upcoming OPEN slots to book (and one past appointment as history).
 
 -- Users: 2 trainers (PROVIDER) + 2 members (CUSTOMER).
 -- password_hash values are BCrypt hashes of the demo password in the README.
-INSERT INTO users (username, password_hash, role, full_name, email) VALUES
+INSERT INTO users (username, password_hash, role, full_name, email)
+SELECT column1, column2, column3, column4, column5 FROM (VALUES
     ('coach_maya',   '$2y$10$Nli8tTNhZn8X/KTDxvXKIuXPLH87KcEa.bGimtn4HkTYwmKCaFBoi', 'PROVIDER', 'Maya Chen',       'maya.chen@fitbook.example'),
     ('coach_diego',  '$2y$10$TjtPkGCEdkD5Vdz7J408uOQ5qF9Cr3zHkO665orUwra7YqHdFuXpu', 'PROVIDER', 'Diego Alvarez',   'diego.alvarez@fitbook.example'),
     ('member_arjun', '$2y$10$kh8Q0CHrqz/Z0yP37og9QOQXXoXZaHf4UfpuLWM0akmlIqPhyRRIi', 'CUSTOMER', 'Arjun Ravendran', 'member.arjun@fitbook.example'),
-    ('member_lena',  '$2y$10$fvaC.b9m4QPJMWGLaVtYGeTQhdJSFyADb4lZOYN54uuXSt4hDHP6y', 'CUSTOMER', 'Lena Park',       'lena.park@fitbook.example');
+    ('member_lena',  '$2y$10$fvaC.b9m4QPJMWGLaVtYGeTQhdJSFyADb4lZOYN54uuXSt4hDHP6y', 'CUSTOMER', 'Lena Park',       'lena.park@fitbook.example'))
+WHERE NOT EXISTS (SELECT 1 FROM users);
 
-INSERT INTO providers (user_id, specialty, bio) VALUES
+INSERT INTO providers (user_id, specialty, bio)
+SELECT column1, column2, column3 FROM (VALUES
     ((SELECT id FROM users WHERE username = 'coach_maya'),  'Strength & Conditioning', 'Certified strength coach, 8 years training experience.'),
-    ((SELECT id FROM users WHERE username = 'coach_diego'), 'Yoga & Mobility',         'RYT-500 yoga instructor focused on mobility and recovery.');
+    ((SELECT id FROM users WHERE username = 'coach_diego'), 'Yoga & Mobility',         'RYT-500 yoga instructor focused on mobility and recovery.'))
+WHERE NOT EXISTS (SELECT 1 FROM providers);
 
-INSERT INTO services (name, duration_minutes, price, description) VALUES
+INSERT INTO services (name, duration_minutes, price, description)
+SELECT column1, column2, column3, column4 FROM (VALUES
     ('1:1 Personal Training', 60, 75.00, 'One-on-one strength and conditioning session.'),
     ('Group HIIT Class',      45, 25.00, 'High-intensity interval training, small group.'),
     ('Vinyasa Yoga',          60, 30.00, 'Flow-based yoga class for all levels.'),
-    ('Mobility & Recovery',   30, 20.00, 'Guided stretching and mobility work.');
+    ('Mobility & Recovery',   30, 20.00, 'Guided stretching and mobility work.'))
+WHERE NOT EXISTS (SELECT 1 FROM services);
 
 -- Availability slots. day_offset = days from today, start_min = minutes after
 -- midnight (540 = 09:00). The end time is start + the service duration.
@@ -42,11 +52,14 @@ SELECT sp.id, p.id, sv.id,
        sp.status
 FROM spec sp
 JOIN providers p ON p.specialty = sp.provider_specialty
-JOIN services sv ON sv.name = sp.service_name;
+JOIN services sv ON sv.name = sp.service_name
+WHERE NOT EXISTS (SELECT 1 FROM availability_slots);
 
 -- Slot 1 is in the past (reads back as COMPLETED), slot 5 is an upcoming
 -- booking by Lena, slot 6 is open again after Arjun cancelled his booking.
-INSERT INTO appointments (slot_id, customer_id, service_id, status) VALUES
+INSERT INTO appointments (slot_id, customer_id, service_id, status)
+SELECT column1, column2, column3, column4 FROM (VALUES
     (1, (SELECT id FROM users WHERE username = 'member_arjun'), (SELECT id FROM services WHERE name = '1:1 Personal Training'), 'BOOKED'),
     (5, (SELECT id FROM users WHERE username = 'member_lena'),  (SELECT id FROM services WHERE name = 'Group HIIT Class'),      'BOOKED'),
-    (6, (SELECT id FROM users WHERE username = 'member_arjun'), (SELECT id FROM services WHERE name = '1:1 Personal Training'), 'CANCELLED');
+    (6, (SELECT id FROM users WHERE username = 'member_arjun'), (SELECT id FROM services WHERE name = '1:1 Personal Training'), 'CANCELLED'))
+WHERE NOT EXISTS (SELECT 1 FROM appointments);

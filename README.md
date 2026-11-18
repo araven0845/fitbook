@@ -92,6 +92,8 @@ past (`COMPLETED`) and one `CANCELLED` appointment to show history.
   login or a restart.
 - **Tests** — the agent's book tool is raced against itself and against the
   website on a real SQLite file: exactly one booking wins. No test calls Gemini.
+- **Data persistence (Milestone 3 feedback)** — startup no longer drops the
+  tables; data survives restarts (see [Data persistence](#data-persistence)).
 
 See [AI agents](#ai-agents-milestone-4) below for the design.
 
@@ -316,9 +318,9 @@ nothing and the assistant keeps working without FAQ text.
 `JdbcChatMemoryRepository` implements Spring AI's `ChatMemoryRepository` with
 hand-written SQL over the `chat_memory` table, wrapped in a 20-message sliding
 window. Conversations are keyed by member (`user-<id>`), not by HTTP session, so
-they survive logging out. `chat_memory` is the one table `schema.sql` does not
-drop on startup, so they also survive a restart. **Clear conversation** on the
-chat page deletes it.
+they survive logging out, and like every table they are kept in the database
+file, so they also survive a restart. **Clear conversation** on the chat page
+deletes it.
 
 ### Metrics and logs
 
@@ -380,10 +382,25 @@ The compose file has a health check that polls `/health`.
 `.github/workflows/ci.yml` runs on every push and pull request: it sets up JDK 21,
 runs `mvn -B verify` (build plus all tests), then builds the Docker image.
 
-The app starts on **http://localhost:8080**. On every startup it drops and
-recreates the tables from `schema.sql`, then reloads `seed.sql`, so you always
-start from the same known dataset (only the assistant's conversation memory is
-kept). Log in at `/login` with a demo account.
+The app starts on **http://localhost:8080**. Log in at `/login` with a demo
+account.
+
+### Data persistence
+
+Startup never deletes data. `schema.sql` uses `CREATE TABLE IF NOT EXISTS` (and
+the same for indexes), so it only creates what is missing, and every insert in
+`seed.sql` is guarded by `WHERE NOT EXISTS (SELECT 1 FROM <table>)`, so the demo
+data goes only into a new, empty database. Bookings, cancellation history,
+notification records and conversations therefore survive a restart, and with
+Docker they live on the `fitbook-data` volume. `DataPersistenceTest` proves it:
+it starts the app, books and cancels, restarts the app on the same file, and
+checks that every table has the same rows and nothing was seeded twice.
+
+To go back to the demo data, stop the app and delete the database file:
+
+```bash
+rm -f fitbook.db fitbook.db-wal fitbook.db-shm
+```
 
 Quick API check:
 
@@ -435,13 +452,14 @@ src/main/java/com/fitbook/
   dto/          Strict DTOs and request records (validated with @Valid)
   model/        Internal row records and enums (never returned by controllers)
 src/main/resources/
-  schema.sql    Tables + double-booking guard (+ notifications, chat_memory)
-  seed.sql      Demo accounts, trainers, services, slots, appointments
+  schema.sql    Tables + double-booking guard (+ notifications, chat_memory); create-if-missing only
+  seed.sql      Demo accounts, trainers, services, slots, appointments; loaded into an empty database only
   knowledge/    fitbook-faq.md, the policy and FAQ knowledge source for RAG
   templates/    Thymeleaf views
 src/test/java/com/fitbook/
   service/                Unit tests (mocked repositories)
   BookingConcurrencyTest  Two-thread race tests against real SQLite
+  persistence/            DataPersistenceTest: data survives an application restart
   AuthAndRbacTest         Login, 401/403, validation and error-response tests
   ai/                     Milestone 4: agent tools, double-booking through the agent, chat endpoint,
                           RAG, conversation memory, reminder agent

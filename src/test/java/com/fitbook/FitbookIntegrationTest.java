@@ -12,7 +12,8 @@ import java.lang.annotation.Target;
 /**
  * Full application context over a real SQLite file. Every integration test uses this same
  * annotation, so they share one cached context (schema.sql + seed.sql load once) and each test
- * creates its own slots instead of relying on shared mutable data.
+ * creates its own slots instead of relying on shared mutable data. The database now persists
+ * across restarts, so each test run gets its own new file under target/ (${random.uuid}).
  *
  * <p>Gemini is never called from tests: src/test/resources/config/application.yml switches the
  * Google auto-configuration off and testsupport.StubAiConfig supplies stand-in models.
@@ -22,7 +23,7 @@ import java.lang.annotation.Target;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:sqlite:./fitbook-test.db",
+        "spring.datasource.url=jdbc:sqlite:./target/fitbook-test-${random.uuid}.db",
         // Nothing listens here, so notifications fail fast and never reach a dev server running on :8080.
         "fitbook.notification.base-url=http://localhost:1",
         "fitbook.notification.max-attempts=1"

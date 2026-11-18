@@ -22,8 +22,8 @@ spring:
   # --- Database (JDBC, no ORM) ---
   # SQLite is used because it needs zero external services to run -
   # the grader can clone the repo and start the app with nothing else installed.
-  # The DB file is rebuilt from schema.sql + seed.sql on every startup (see schema.sql,
-  # which DROPs and recreates all tables), so every run starts from a known, gradeable state.
+  # Startup is non-destructive: schema.sql only creates missing tables and seed.sql only fills
+  # empty ones, so data survives restarts. Delete the .db file to go back to the demo data.
   # Swapping to MySQL/PostgreSQL later only means changing the datasource url/driver here;
   # all SQL is hand-written per-table.
   datasource:
